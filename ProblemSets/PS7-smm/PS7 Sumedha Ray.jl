@@ -1,4 +1,3 @@
-Ransom PS7
 
 using Random, LinearAlgebra, Distributions, Statistics, Optim, DataFrames, CSV, HTTP, GLM, FreqTables
 
