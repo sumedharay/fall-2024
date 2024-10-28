@@ -1,7 +1,10 @@
-# PS8 Question 1: Basic Wage Regression
+
 # ECON 6343: Econometrics III
 
-# Load required packages
+#:::::::::::::::::::::::::::::::::
+#Question
+#:::::::::::::::::::::::::::::::::
+# Loading required packages
 using DataFrames
 using CSV
 using GLM
@@ -9,22 +12,22 @@ using GLM
 function run_basic_analysis()
     println("Starting analysis...")
     
-    # Use the full path to the file
+    # Using the full path to the file
     file_path = joinpath(pwd(), "ProblemSets", "PS8-factor", "nlsy.csv")
     
-    # Load the data
+    # Loading the data
     println("Loading data from: ", file_path)
     df = CSV.read(file_path, DataFrame)
     println("Successfully loaded data with $(size(df,1)) rows and $(size(df,2)) columns")
     
-    # Run the baseline regression with correct variable names
+    # Running the baseline regression with correct variable names
     println("\nQuestion 1: Basic Wage Regression")
     println("Formula: logwage ~ black + hispanic + female + schoolt + gradHS + grad4yr")
     
-    # Estimate the model
+    # Estimating the model
     model = lm(@formula(logwage ~ black + hispanic + female + schoolt + gradHS + grad4yr), df)
     
-    # Print the results
+    # Printing the results
     println("\nRegression Results:")
     println("===================")
     println(model)
@@ -32,11 +35,11 @@ function run_basic_analysis()
     return df, model
 end
 
-# Run the analysis
+# Running the analysis
 println("Starting PS8 Question 1 analysis...")
 df, model = run_basic_analysis()
 
-
+#:::::::::::::::::::::::::::::::::::::::
 #Question 2
 #:::::::::::::::::::::::::::::::::::::::
 
@@ -49,25 +52,25 @@ Compute and format the correlation matrix for the six ASVAB variables.
 Returns both the correlation matrix and a formatted string for display.
 """
 function compute_asvab_correlation(df::DataFrame)
-    # Select only the ASVAB variables
+    # Selecting only the ASVAB variables
     asvab_vars = ["asvabAR", "asvabWK", "asvabPC", "asvabNO", "asvabCS", "asvabMK"]
     asvab_data = Matrix(df[:, asvab_vars])
     
-    # Compute correlation matrix
+    # Computing correlation matrix
     cor_matrix = cor(asvab_data)
     
-    # Create formatted output
+    # Creating formatted output
     println("\nCorrelation Matrix for ASVAB Variables:")
     println("======================================")
     
-    # Print header
+    # Printing header
     print("         ")
     for var in asvab_vars
         print(lpad(var[6:end], 8), " ")  # Remove "asvab" prefix for cleaner output
     end
     println()
     
-    # Print correlation matrix with row labels
+    # Printing correlation matrix with row labels
     for (i, var) in enumerate(asvab_vars)
         print(lpad(var[6:end], 8), " ")  # Row label
         for j in 1:6
@@ -79,11 +82,11 @@ function compute_asvab_correlation(df::DataFrame)
     return cor_matrix
 end
 
-# Run the analysis using the previously loaded dataframe
+# Running the analysis using the previously loaded dataframe
 println("Question 2: Computing ASVAB Variable Correlations")
 cor_matrix = compute_asvab_correlation(df)
 
-
+#:::::::::::::::::::::::::::::::::::::::
 #Question 3
 #:::::::::::::::::::::::::::::::::::::::
 
@@ -97,35 +100,35 @@ Run the wage regression including all ASVAB variables.
 function run_expanded_regression(df::DataFrame)
     println("\nQuestion 3: Expanded Regression with ASVAB Variables")
     
-    # Create and estimate the expanded model
+    # Creating and estimating the expanded model
     formula = @formula(logwage ~ black + hispanic + female + schoolt + gradHS + grad4yr + 
                       asvabAR + asvabWK + asvabPC + asvabNO + asvabCS + asvabMK)
     
     model = lm(formula, df)
     
-    # Print results
+    # Printing results
     println("\nRegression Results (Including ASVAB variables):")
     println("============================================")
     println(model)
     
-    # Compute VIF for each ASVAB variable to quantify multicollinearity
+    # Computing VIF for each ASVAB variable to quantify multicollinearity
     asvab_vars = ["asvabAR", "asvabWK", "asvabPC", "asvabNO", "asvabCS", "asvabMK"]
     vifs = Dict{String, Float64}()
     
     for var in asvab_vars
-        # Create formula for auxiliary regression
+        # Creating formula for auxiliary regression
         others = filter(x -> x != var, asvab_vars)
         aux_formula = Term(Symbol(var)) ~ sum(Term.(Symbol.(others)))
         
-        # Run auxiliary regression
+        # Running auxiliary regression
         aux_model = lm(aux_formula, df)
         
-        # Calculate VIF
+        # Calculating VIF
         r2 = r²(aux_model)
         vifs[var] = 1 / (1 - r2)
     end
     
-    # Print VIF results
+    # Printing VIF results
     println("\nVariance Inflation Factors for ASVAB variables:")
     println("=============================================")
     for (var, vif) in vifs
@@ -135,7 +138,7 @@ function run_expanded_regression(df::DataFrame)
     return model, vifs
 end
 
-# Run the expanded regression
+# Running the expanded regression
 expanded_model, vifs = run_expanded_regression(df)
 
 #:::::::::::::::::::::::::::::::::::::::
@@ -149,31 +152,31 @@ using DataFrames, CSV, GLM, Statistics, MultivariateStats, LinearAlgebra
 function run_pca_regression(df::DataFrame)
     println("\nQuestion 4: Regression with First Principal Component")
     
-    # Extract ASVAB variables and convert to matrix
+    # Extracting ASVAB variables and convert to matrix
     asvab_vars = ["asvabAR", "asvabWK", "asvabPC", "asvabNO", "asvabCS", "asvabMK"]
     asvab_matrix = Matrix(df[:, asvab_vars])
     
-    # Transpose matrix for PCA
+    # Transposing matrix for PCA
     asvab_matrix_t = transpose(asvab_matrix)
     
-    # Fit PCA model
+    # Fitting PCA model
     println("\nFitting PCA model...")
     M = fit(PCA, asvab_matrix_t; maxoutdim=1)
     
-    # Transform data to get first principal component
+    # Transforming data to get first principal component
     pc1 = MultivariateStats.transform(M, asvab_matrix_t)
     
-    # Add first principal component to dataframe
+    # Adding first principal component to dataframe
     df.pc1 = vec(transpose(pc1))
     
-    # Calculate and print variance explained
+    # Calculating and printing variance explained
     println("\nPCA Summary Statistics:")
     println("=====================")
     var_explained = principalratio(M)
     println("Variance explained by first principal component: ", 
             round(var_explained * 100, digits=2), "%")
     
-    # Print loadings
+    # Printing loadings
     println("\nPCA Loadings (correlation between PC1 and original variables):")
     println("====================================================")
     loadings = projection(M)
@@ -181,7 +184,7 @@ function run_pca_regression(df::DataFrame)
         println(rpad(var, 8), ": ", round(loading, digits=4))
     end
     
-    # Run regression with first principal component
+    # Running regression with first principal component
     println("\nRegression Results:")
     println("==================")
     formula = @formula(logwage ~ black + hispanic + female + schoolt + gradHS + 
@@ -192,7 +195,7 @@ function run_pca_regression(df::DataFrame)
     return M, model
 end
 
-# Run PCA regression
+# Running PCA regression
 pca_model, reg_model = run_pca_regression(df)
 
 #:::::::::::::::::::::::::::::::::::::::
@@ -209,24 +212,24 @@ Perform Factor Analysis on ASVAB variables and run regression with first factor.
 function run_fa_regression(df::DataFrame)
     println("\nQuestion 5: Regression with Factor Analysis")
     
-    # Extract ASVAB variables and convert to matrix
+    # Extracting ASVAB variables and convert to matrix
     asvab_vars = ["asvabAR", "asvabWK", "asvabPC", "asvabNO", "asvabCS", "asvabMK"]
     asvab_matrix = Matrix(df[:, asvab_vars])
     
-    # Transpose matrix for FA (variables should be in columns)
+    # Transposing matrix for FA (variables should be in columns)
     asvab_matrix_t = transpose(asvab_matrix)
     
-    # Fit Factor Analysis model
+    # Fitting Factor Analysis model
     println("\nFitting Factor Analysis model...")
     M = fit(FactorAnalysis, asvab_matrix_t; maxoutdim=1)
     
-    # Transform data to get factor scores
+    # Transforming data to get factor scores
     fa1 = MultivariateStats.transform(M, asvab_matrix_t)
     
-    # Add factor scores to dataframe
+    # Adding factor scores to dataframe
     df.fa1 = vec(transpose(fa1))
     
-    # Print factor loadings
+    # Printing factor loadings
     println("\nFactor Loadings (correlation between Factor 1 and original variables):")
     println("=======================================================")
     loadings = projection(M)
@@ -234,13 +237,13 @@ function run_fa_regression(df::DataFrame)
         println(rpad(var, 8), ": ", round(loading, digits=4))
     end
     
-    # Print variance explained
+    # Printing variance explained
     println("\nFactor Analysis Summary:")
     println("=====================")
     var_exp = sum(loadings .^ 2) / length(loadings)  # Average of squared loadings
     println("Proportion of variance explained: ", round(var_exp * 100, digits=2), "%")
     
-    # Run regression with factor score
+    # Running regression with factor score
     println("\nRegression Results:")
     println("==================")
     formula = @formula(logwage ~ black + hispanic + female + schoolt + gradHS + 
@@ -251,7 +254,7 @@ function run_fa_regression(df::DataFrame)
     return M, model
 end
 
-# Run Factor Analysis regression
+# Running Factor Analysis regression
 fa_model, reg_model = run_fa_regression(df)
 
 
@@ -264,27 +267,27 @@ function run_measurement_system()
     println("\nQuestion 6: Maximum Likelihood Estimation of Measurement System")
     println("============================================================")
     
-    # Load the data using the correct file path
+    # Loading the data using the correct file path
     println("Loading data...")
     file_path = joinpath(pwd(), "ProblemSets", "PS8-factor", "nlsy.csv")
     println("Loading data from: ", file_path)
     df = CSV.read(file_path, DataFrame)
     
-    # Rest of the code remains the same
-    # Prepare data matrices
+
+    # Preparing data matrices
     X_m = [ones(size(df,1)) df.black df.hispanic df.female]
     X = [ones(size(df,1)) df.black df.hispanic df.female df.schoolt df.gradHS df.grad4yr]
     asvab_vars = ["asvabAR", "asvabWK", "asvabPC", "asvabNO", "asvabCS", "asvabMK"]
     M = Matrix(df[:, asvab_vars])
     y = df.logwage
     
-    # Set dimensions
+    # Setting dimensions
     N = size(X, 1)
     J = length(asvab_vars)
     K_m = size(X_m, 2)
     K = size(X, 2)
     
-    # Initialize parameters
+    # Initializing parameters
     function init_params()
         # For each ASVAB equation: α₀, α₁, α₂, α₃, γ
         α_params = zeros(J * K_m)
@@ -301,7 +304,7 @@ function run_measurement_system()
     
     # Likelihood function
     function loglikelihood(θ)
-        # Unpack parameters
+        # Unpacking parameters
         idx = 1
         α = reshape(θ[idx:idx+J*K_m-1], K_m, J); idx += J*K_m
         γ = θ[idx:idx+J-1]; idx += J
@@ -310,16 +313,16 @@ function run_measurement_system()
         σ_j = exp.(θ[idx:idx+J-1]); idx += J
         σ_w = exp(θ[idx])
         
-        # Set up quadrature
+        # Settin up quadrature
         n_quad = 7
         nodes, weights = lgwt(n_quad, -4, 4)
         
-        # Initialize log-likelihood
+        # Initializing log-likelihood
         ll = 0.0
         
-        # Loop over observations
+        # Looping over observations
         for i in 1:N
-            # Initialize likelihood for observation i
+            # Initializing likelihood for observation i
             li = 0.0
             
             for (node, weight) in zip(nodes, weights)
@@ -344,7 +347,7 @@ function run_measurement_system()
         return -ll  # Return negative for minimization
     end
     
-    # Optimize
+    # Optimizing
     println("Starting optimization...")
     θ_init = init_params()
     
@@ -353,16 +356,16 @@ function run_measurement_system()
                       Optim.Options(show_trace=true, store_trace=true,
                                   iterations=1000, g_tol=1e-5))
         
-        # Extract and display results
+        # Extracting and displaying results
         θ_hat = Optim.minimizer(res)
         
-        # Print results
+        # Printing results
         println("\nResults:")
         println("--------")
         println("Convergence: ", Optim.converged(res))
         println("Final log-likelihood: ", -Optim.minimum(res))
         
-        # Unpack and print parameter estimates
+        # Unpacking and printing parameter estimates
         idx = 1
         α = reshape(θ_hat[idx:idx+J*K_m-1], K_m, J); idx += J*K_m
         γ = θ_hat[idx:idx+J-1]; idx += J
@@ -399,7 +402,7 @@ function run_measurement_system()
     end
 end
 
-# Execute the estimation
+# Executing the estimation
 θ_hat, res = run_measurement_system()
 
 #:::::::::::::::::::::::::::::::::::::::
@@ -415,7 +418,7 @@ using MultivariateStats
 using GLM
 
 @testset "PS8 Tests" begin
-    # Create more realistic test data
+    
     function create_test_data()
         N = 100  # Larger sample size
         Random.seed!(123)  # For reproducibility
@@ -428,7 +431,7 @@ using GLM
             schoolt = 12 .+ rand(0:8, N),
             gradHS = rand(0:1, N),
             grad4yr = rand(0:1, N),
-            # Create ASVAB scores with realistic correlations
+            # Creating ASVAB scores with realistic correlations
             asvabAR = randn(N),
             asvabWK = randn(N),
             asvabPC = randn(N),
